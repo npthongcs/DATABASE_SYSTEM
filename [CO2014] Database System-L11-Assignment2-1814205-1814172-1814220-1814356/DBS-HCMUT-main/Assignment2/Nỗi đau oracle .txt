@@ -1,0 +1,4 @@
+Oracle không hỗ trợ on update cascade hay on update set null
+--> Phải mô phỏng lại thông qua các trigger
+Oracle không hỗ trợ từ khóa creat assertion
+--> Phải mô phỏng lại thông qua các trigger

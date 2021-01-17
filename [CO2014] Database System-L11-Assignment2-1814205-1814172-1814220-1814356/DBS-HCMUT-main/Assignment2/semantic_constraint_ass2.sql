@@ -1,0 +1,337 @@
+--alter table employee
+--add constraint check_negative_ecode check (ecode>0);
+--
+--alter table employee 
+--add constraint check_negative_year check (deg_year > 1900);
+--
+--alter table employee 
+--add constraint check_valid_year check (startdate > birthDate and deg_year < EXTRACT(YEAR FROM startdate));
+--
+
+--alter table department 
+--add constraint check_negative_dept_code check (departmentcode >=0) ;
+--
+--
+--ALTER TABLE inpatient
+--  ADD discharge_date date;
+--
+--alter table inpatient 
+--add constraint valid_inpatient_date check (ip_dob < admisstion_date and admisstion_date < discharge_date);
+--
+--alter table inpatient 
+--add constraint check_negative_fee check (fee >= 0)
+--add constraint check_negative_sick_room check (sick_room >=0);
+--
+--alter table treat
+--add constraint check_valid_treat_period check (StartDate < EndDate);
+--
+--alter table examination
+--add constraint check_valid_reexam check(exam_date < second_exam_date);
+--
+--alter table examination 
+--add constraint negative_fee_check check (fee >= 0);
+--
+--alter table medication 
+--add constraint medication_validity_check check (med_date < expDate);
+--
+--alter table medication 
+--add constraint medication_price_check check (price >=0);
+
+
+--============================================================TRIGGER FOR SEMANTIC CONSTRAINT =================================
+--create or replace trigger dean_experience_check
+--    before insert or update on department
+--    for each row
+--    declare 
+--        dean_deg_year employee.deg_year%TYPE; 
+--    begin 
+--        select deg_year into dean_deg_year
+--        from employee 
+--        where ecode = :new.deancode;
+--        if (TO_CHAR(dean_deg_year) < TO_CHAR(EXTRACT(YEAR FROM Sysdate) - 5)) 
+--        then raise_application_error(-20002,'The dean does not have enough experience.Choose another guy!');
+--        end if;
+--    end;
+-- 
+
+--create or replace trigger deg_year_validity_check
+--    before insert or update of deg_year
+--    on employee 
+--    for each row
+--    begin 
+--        if TO_CHAR(extract(year from sysdate)) < TO_CHAR(:new.deg_year) 
+--        then raise_application_error(-20003,'The Graduation year of the degree is not valid. Pls make sure you have already graduated before applying');
+--        end if;
+--    end;
+--        
+
+-- CHECK INPATIENT AND OUTPATITENT CODE
+--create or replace trigger patient_format_code_check
+--    before insert or update of ipcode
+--    on inpatient
+--    for each row
+--    begin 
+--        if not REGEXP_LIKE(:new.ipcode,'IP\d{5}')
+--        then raise_application_error(-20004,'Wrong format code for inpatient. Please check if the code is in format IPXXXX where X is a digit!');
+--        end if;
+--    end;
+
+--create or replace trigger out_patient_code_check
+--    before insert or update of opcode
+--    on outpatient
+--    for each row 
+--    begin 
+--        if not REGEXP_LIKE(:new.opcode,'OP\d{5}')
+--        then raise_application_error(-20005,'Wrong format code for outpatient. Correct format is: OPXXXXX where X is a digit');
+--        end if;
+--    end;
+    
+-- The value of “Date of Birth” field for each entity must not be greater than today.
+--create or replace trigger employee_valid_birthdate
+--    before insert or update of birthdate
+--    on employee 
+--    for each row
+--    begin
+--        if (extract(year from :new.birthdate) > extract(year from sysdate))
+--        then raise_application_error(-20006,'An employee cannot be a new born or to be born');
+--        end if;
+--    end;
+
+--create or replace trigger inpatient_valid_birthdate
+--    before insert or update of ip_dob
+--    on inpatient
+--    for each row 
+--    begin 
+--        if (extract(year from :new.ip_dob) > extract(year from sysdate))
+--        then raise_application_error(-20007,'An person will not exist until today');
+--        end if;
+--    end;
+
+--create or replace trigger outpatient_valid_birthdate
+--    before insert or update of op_dob
+--    on outpatient
+--    for each row
+--    begin 
+--        if (extract(year from :new.op_dob) > extract(year from sysdate))
+--        then raise_application_error(-20008,'In valid birthdate of outpatient');
+--        end if;
+--    end;
+
+-- All name, title fields must not contain any digits	
+--alter table employee
+--drop constraint fname_no_digit_check;
+--
+--alter table employee
+--add constraint fname_no_digit_check check (not regexp_like(fname,'[[:digit]]'));
+--add constraint lname_no_digit_chekc check (regexp_like(fname,'[^0-9]*'))
+--add constraint deg_name_no_digit check(regexp_like(deg_name,'[^0-9]*'));
+--
+--alter table department
+--add constraint department_title check (regexp_like(fnmae,'[^0-9]*'));
+--
+--alter table inpatient
+--add constraint ip_no_digit_fname check (regexp_like(ip_fname,'[^0-9]*'))
+--add constraint ip_no_digit_lname check (regexp_like(ip_lname,'[^0-9]*'));
+
+--alter table outpatient 
+--add constraint op_no_digit_fname check(not regexp_like(op_fname,'[0-9]'))
+--add constraint op_no_digit_lname check(not regexp_like(op_lname,'[0-9]'));
+--alter table medication
+--add constraint med_name_no_digit check (not regexp_like(med_name,'[0-9]'));
+--select * 
+--from employee 
+--where not REGEXP_LIKE(fname, '[0-9]')
+
+--
+--create or replace trigger check_valid_exp_date
+--    before insert or update of expdate 
+--    on medication 
+--    for each row
+--    begin 
+--        if(:new.expdate  < sysdate)
+--        then raise_application_error(-20006,'The medicine is oudated. Check or use another one');
+--        end if;
+--    end;
+--    
+--alter table examination
+--modify (
+--    exam_date TIMESTAMP,
+--    second_exam_date TIMESTAMP
+--);
+
+
+
+
+--======DÒ L?I CÁC CONSTRAINT =====================
+-- CONSTRAINT FOR EMPLOYEE: GENDER SHOUBE EITHER 'M' or 'F'
+--alter table employee
+--add constraint employee_gender_validity check(REGEXP_LIKE(gender,'(M|F)'));
+--alter table employee 
+--add constraint check_valid_year check (startdate > birthDate and deg_year <= extract(year from startdate));
+--add constraint fname_no_digit_check check (not regexp_like(fname,'[0-9]'))
+--add constraint lname_no_digit_check check (not regexp_like(lname,'[0-9]'))
+--add constraint deg_name_no_digit check(not regexp_like(deg_name,'[0-9]'));
+--
+
+-- CONSTRAINT FOR DEPARTMENT: Everything looks good;
+-- CONSTRAINT FOR PATIENT: FORCE ON GENDER OPTION
+--alter table inpatient
+--drop constraint ip_no_digit_fname
+--drop constraint ip_no_digit_lname;
+--add constraint ip_no_digit_fname check (not regexp_like(ip_fname,'[0-9]'));
+--add constraint ip_no_digit_lname check (not regexp_like(ip_lname,'[0-9]'));
+--add constraint inpatient_gender check (regexp_like(ip_gender,'(F|M)'));
+--add constraint valid_inpatient_date check (ip_dob < admission_date and admission_date <= discharge_date);
+
+
+-- CONSTRAINT FOR OUTPATITENT: ADD GENDER OPTION
+--alter table outpatient
+--add constraint op_gender_check check (regexp_like(op_gender,'(F|M)'));
+
+-- CONSTRAINT FOR PRESCRIPT: WE INTENTIONALLY LEFT THE MEDNAME ABLE TO HAVE NUMBER INSIDE ITS NAME (SOME MEDICINE HAVE MULTIPLE VERSION)
+--alter table prescript 
+--add constraint fk_prescript_doctor foreign key(doc_code) references doctor(dcode) on delete set null;   
+--add constraint prescript_primayry primary key(doc_code,op_code,med_code);
+-- CONSTRAINT FOR MEDICATION:
+--            create or replace trigger check_med_date_validity
+--                before insert or update of med_date 
+--                on medication
+--                for each row 
+--                begin 
+--                    if(:new.med_date < sysdate) 
+--                    then raise_application_error(-20010,'Invalid medication date. It shoud be earlier than today');
+--                    end if;
+--                end;
+--alter table medication 
+--add constraint check_med_name check(not regexp_like(med_name,'[0-9]'));
+
+--
+--create or replace trigger dean_experience_check
+--    before insert or update on department
+--    for each row
+--    declare 
+--        dean_deg_year employee.deg_year%TYPE; 
+--    begin 
+--        select deg_year into dean_deg_year
+--        from employee 
+--        where ecode = :new.deancode;
+--        if (TO_CHAR(dean_deg_year) > TO_CHAR(EXTRACT(YEAR FROM Sysdate) - 5)) 
+--        then raise_application_error(-20002,'The dean does not have enough experience.Choose another guy!');
+--        end if;
+--    end;
+--==============================================THU?N WORKS =============================================
+--========UPDATE ECODE IN DOCTOR, NURSE AND PHONE======== 
+--
+--CREATE OR REPLACE TRIGGER update_fk_ecode
+--AFTER UPDATE OF ECODE ON EMPLOYEE
+--FOR EACH ROW
+--BEGIN
+--    UPDATE PHONE
+--    SET PHONE.ECODE = :NEW.ECODE
+--    WHERE :OLD.ECODE = PHONE.ECODE;
+--    
+--    UPDATE DOCTOR
+--    SET DOCTOR.DCODE = :NEW.ECODE
+--    WHERE :OLD.ECODE = DOCTOR.DCODE;
+--    
+--    UPDATE NURSE
+--    SET NURSE.NCODE = :NEW.ECODE
+--    WHERE :OLD.ECODE = NURSE.NCODE;
+--END;
+
+--
+----=======UPDATE DEPARTMENTCODE IN EMPLOYEE=======
+--
+--CREATE OR REPLACE TRIGGER update_fk_departmentcode
+--AFTER UPDATE OF DEPARTMENTCODE ON DEPARTMENT
+--FOR EACH ROW
+--BEGIN
+--    UPDATE EMPLOYEE
+--    SET EMPLOYEE.DEPARTMENTCODE = :NEW.DEPARTMENTCODE
+--    WHERE :OLD.DEPARTMENTCODE = EMPLOYEE.DEPARTMENTCODE;
+--END;
+--
+--
+----=======UPDATE NCODE IN INPATIENT=======
+--
+--CREATE OR REPLACE TRIGGER update_fk_ncode_inpatient
+--AFTER UPDATE OF NCODE ON NURSE
+--FOR EACH ROW
+--BEGIN
+--    UPDATE INPATIENT
+--    SET INPATIENT.NCODE = :NEW.NCODE
+--    WHERE :OLD.NCODE = INPATIENT.NCODE;
+--END;
+--
+--
+--
+--
+--
+----===UPDATE DCODE IN DEPARTMENT, TREAT, EXAMINATION AND PRESCRIPT===
+--
+--CREATE OR REPLACE TRIGGER update_fk_doccode
+--AFTER UPDATE OF DCODE ON DOCTOR
+--FOR EACH ROW
+--BEGIN
+--    UPDATE DEPARTMENT
+--    SET DEPARTMENT.DEANCODE = :NEW.DCODE
+--    WHERE :OLD.DCODE = DEPARTMENT.DEANCODE;
+--    
+--    UPDATE TREAT
+--    SET TREAT.DOC_CODE = :NEW.DCODE
+--    WHERE :OLD.DCODE = TREAT.DOC_CODE;
+--    
+--    UPDATE EXAMINATION
+--    SET EXAMINATION.DOC_CODE = :NEW.DCODE
+--    WHERE :OLD.DCODE = EXAMINATION.DOC_CODE;
+--    
+--    UPDATE PRESCRIPT
+--    SET PRESCRIPT.DOC_CODE = :NEW.DCODE
+--    WHERE :OLD.DCODE = PRESCRIPT.DOC_CODE;
+--END;
+--
+----=======UPDATE IPCODE IN TREAT=======
+--
+--CREATE OR REPLACE TRIGGER update_fk_ipcode
+--AFTER UPDATE OF IPCODE ON INPATIENT
+--FOR EACH ROW
+--BEGIN
+--    UPDATE TREAT
+--    SET TREAT.IPCODE = :NEW.IPCODE
+--    WHERE :OLD.IPCODE = TREAT.IPCODE;
+--END;
+--
+----=======UPDATE OPCODE IN EXAMINATION AND PRESCRIPT=======
+--
+--CREATE OR REPLACE TRIGGER update_fk_opcode
+--AFTER UPDATE OF OPCODE ON OUTPATIENT
+--FOR EACH ROW
+--BEGIN
+--    UPDATE EXAMINATION
+--    SET EXAMINATION.OP_CODE = :NEW.OPCODE
+--    WHERE :OLD.OPCODE = EXAMINATION.OP_CODE;
+--    
+--    UPDATE PRESCRIPT
+--    SET PRESCRIPT.OP_CODE = :NEW.OPCODE
+--    WHERE :OLD.OPCODE = PRESCRIPT.OP_CODE;
+--END;
+----=======UPDATE MED_CODE IN TREAT, PRESCRIPT AND EFFECT=======
+--
+--CREATE OR REPLACE TRIGGER update_fk_medcode
+--AFTER UPDATE OF MED_CODE ON MEDICATION
+--FOR EACH ROW
+--BEGIN
+--    UPDATE TREAT
+--    SET TREAT.MED_CODE = :NEW.MED_CODE
+--    WHERE :OLD.MED_CODE = TREAT.MED_CODE;
+--    
+--    UPDATE PRESCRIPT
+--    SET PRESCRIPT.MED_CODE = :NEW.MED_CODE
+--    WHERE :OLD.MED_CODE = PRESCRIPT.MED_CODE;
+--    
+--    UPDATE EFFECT
+--    SET EFFECT.MED_CODE = :NEW.MED_CODE
+--    WHERE :OLD.MED_CODE = EFFECT.MED_CODE;
+--END;
+
+
